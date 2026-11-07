@@ -1,0 +1,436 @@
+data:
+  tokenizer: null
+  use_shm: false
+  train_files: ${oc.env:RUN_DIR}/data/train.parquet
+  val_files: ${oc.env:RUN_DIR}/data/val.parquet
+  prompt_key: prompt
+  reward_fn_key: data_source
+  max_prompt_length: 4096
+  max_response_length: 512
+  train_batch_size: 8
+  val_batch_size: 16
+  return_raw_input_ids: false
+  return_raw_chat: true
+  return_full_prompt: false
+  shuffle: true
+  filter_overlong_prompts: true
+  filter_overlong_prompts_workers: 1
+  truncation: error
+  image_key: images
+  video_key: videos
+  trust_remote_code: false
+  apply_chat_template_kwargs: {}
+  custom_cls:
+    path: null
+    name: null
+  dataloader_num_workers: 0
+  seed: 0
+actor_rollout_ref:
+  hybrid_engine: true
+  model:
+    path: ${oc.env:MODEL_PATH}
+    use_shm: false
+    external_lib: null
+    override_config: {}
+    enable_gradient_checkpointing: true
+    enable_activation_offload: false
+    use_remove_padding: true
+    lora_rank: 0
+    lora_alpha: 16
+    target_modules: all-linear
+    use_liger: false
+    use_fused_kernels: false
+    trust_remote_code: false
+  actor:
+    strategy: fsdp
+    ppo_mini_batch_size: 128
+    ppo_micro_batch_size: null
+    ppo_micro_batch_size_per_gpu: 2
+    use_dynamic_bsz: false
+    ppo_max_token_len_per_gpu: 16384
+    grad_clip: 1.0
+    clip_ratio: 0.2
+    clip_ratio_low: 0.2
+    clip_ratio_high: 0.2
+    clip_ratio_c: 3.0
+    loss_agg_mode: token-mean
+    entropy_coeff: 0.0
+    use_invalid_action_penalty: false
+    invalid_action_penalty_coef: 0.0
+    use_kl_loss: true
+    use_torch_compile: true
+    kl_loss_coef: 0.01
+    kl_loss_type: low_var_kl
+    ppo_epochs: 1
+    shuffle: false
+    ulysses_sequence_parallel_size: 1
+    policy_loss:
+      loss_mode: vanilla
+    checkpoint:
+      contents:
+      - model
+      - optimizer
+      - extra
+    optim:
+      lr: 1.0e-06
+      lr_warmup_steps: 0
+      lr_warmup_steps_ratio: 0.0
+      min_lr_ratio: 0.0
+      num_cycles: 0.5
+      warmup_style: constant
+      total_training_steps: -1
+      weight_decay: 0.01
+    fsdp_config:
+      wrap_policy:
+        min_num_params: 0
+      param_offload: true
+      optimizer_offload: true
+      offload_policy: false
+      reshard_after_forward: true
+      fsdp_size: -1
+  ref:
+    strategy: fsdp
+    fsdp_config:
+      param_offload: true
+      reshard_after_forward: true
+      wrap_policy:
+        min_num_params: 0
+    use_torch_compile: true
+    log_prob_micro_batch_size: null
+    log_prob_micro_batch_size_per_gpu: 2
+    log_prob_use_dynamic_bsz: false
+    log_prob_max_token_len_per_gpu: 16384
+    ulysses_sequence_parallel_size: 1
+  rollout:
+    name: vllm
+    mode: sync
+    teacher_lora_path: null
+    teacher_lora_rank: 0
+    teacher_lora_name: cpsd_teacher
+    teacher_lora_int_id: 1001
+    chat_scheduler: null
+    temperature: 1.0
+    top_k: -1
+    top_p: 1
+    use_fire_sampling: false
+    prompt_length: 4096
+    response_length: 512
+    dtype: bfloat16
+    gpu_memory_utilization: 0.38
+    ignore_eos: false
+    enforce_eager: false
+    free_cache_engine: false
+    load_format: dummy_dtensor
+    layered_summon: false
+    tensor_model_parallel_size: 1
+    max_num_batched_tokens: 8192
+    max_model_len: null
+    max_num_seqs: 512
+    log_prob_micro_batch_size: null
+    log_prob_micro_batch_size_per_gpu: 2
+    log_prob_use_dynamic_bsz: false
+    log_prob_max_token_len_per_gpu: 16384
+    disable_log_stats: true
+    enable_chunked_prefill: true
+    do_sample: true
+    n: 1
+    engine_kwargs:
+      vllm:
+        swap_space: null
+      sglang:
+        attention_backend: null
+    val_kwargs:
+      top_k: -1
+      top_p: 1.0
+      temperature: 0.4
+      n: 1
+      do_sample: true
+    multi_turn:
+      enable: false
+      max_turns: null
+      tool_config_path: null
+      format: chatml
+critic:
+  rollout_n: 1
+  strategy: fsdp
+  optim:
+    lr: 1.0e-05
+    lr_warmup_steps_ratio: 0.0
+    min_lr_ratio: null
+    warmup_style: constant
+    total_training_steps: -1
+    weight_decay: 0.01
+  model:
+    path: null
+    use_shm: false
+    tokenizer_path: ${oc.env:MODEL_PATH}
+    override_config: {}
+    external_lib: null
+    enable_gradient_checkpointing: true
+    enable_activation_offload: false
+    use_remove_padding: false
+    trust_remote_code: false
+    fsdp_config:
+      param_offload: false
+      optimizer_offload: false
+      offload_policy: false
+      reshard_after_forward: true
+      wrap_policy:
+        min_num_params: 0
+      fsdp_size: -1
+    lora_rank: 0
+    lora_alpha: 16
+    target_modules: all-linear
+  ppo_mini_batch_size: 128
+  ppo_micro_batch_size: null
+  ppo_micro_batch_size_per_gpu: null
+  forward_micro_batch_size: null
+  forward_micro_batch_size_per_gpu: null
+  use_dynamic_bsz: false
+  ppo_max_token_len_per_gpu: 32768
+  forward_max_token_len_per_gpu: 32768
+  ulysses_sequence_parallel_size: 1
+  ppo_epochs: 1
+  shuffle: false
+  grad_clip: 1.0
+  cliprange_value: 0.5
+  loss_agg_mode: token-mean
+  checkpoint:
+    contents:
+    - model
+    - optimizer
+    - extra
+reward_model:
+  enable: false
+  strategy: fsdp
+  model:
+    input_tokenizer: ${oc.env:MODEL_PATH}
+    path: null
+    use_shm: false
+    external_lib: null
+    use_remove_padding: false
+    use_fused_kernels: false
+    trust_remote_code: false
+    fsdp_config:
+      wrap_policy:
+        min_num_params: 0
+      param_offload: false
+      reshard_after_forward: true
+      fsdp_size: -1
+  micro_batch_size: null
+  micro_batch_size_per_gpu: null
+  max_length: null
+  ulysses_sequence_parallel_size: 1
+  use_dynamic_bsz: false
+  forward_max_token_len_per_gpu: 32768
+  reward_manager: episode
+  launch_reward_fn_async: false
+  sandbox_fusion:
+    url: null
+    max_concurrent: 64
+custom_reward_function:
+  path: null
+  name: compute_score
+algorithm:
+  gamma: 1.0
+  lam: 1.0
+  adv_estimator: grpo
+  norm_adv_by_std_in_grpo: true
+  use_kl_in_reward: false
+  kl_penalty: kl
+  kl_ctrl:
+    type: fixed
+    kl_coef: 0.001
+    horizon: 10000
+    target_kl: 0.1
+  use_pf_ppo: false
+  pf_ppo:
+    reweight_method: pow
+    weight_pow: 2.0
+  filter_groups:
+    enable: false
+    max_num_gen_batches: 10
+trainer:
+  balance_batch: true
+  total_epochs: 100
+  total_training_steps: 100
+  project_name: OVCSD
+  experiment_name: alfworld-grpo
+  logger:
+  - console
+  log_val_generations: 0
+  rollout_data_dir: ${oc.env:RUN_DIR}/rollouts
+  validation_data_dir: ${oc.env:RUN_DIR}/validation
+  nnodes: 1
+  n_gpus_per_node: 8
+  save_freq: 25
+  resume_mode: disable
+  resume_from_path: null
+  val_before_train: false
+  val_only: false
+  test_freq: 100
+  critic_warmup: 0
+  default_hdfs_dir: null
+  del_local_ckpt_after_load: false
+  default_local_dir: ${oc.env:RUN_DIR}
+  max_actor_ckpt_to_keep: 2
+  max_critic_ckpt_to_keep: null
+  ray_wait_register_center_timeout: 300
+  device: cuda
+ray_init:
+  num_cpus: 16
+  _temp_dir: ${oc.env:OVCSD_RAY_DIR}
+  object_store_memory: 1200000000
+  include_dashboard: false
+  _system_config:
+    agent_register_timeout_ms: 180000
+    enable_worker_prestart: false
+    prestart_worker_first_driver: false
+    local_fs_capacity_threshold: 0.995
+env:
+  env_name: alfworld/AlfredTWEnv
+  seed: 0
+  max_steps: 50
+  history_length: 4
+  resources_per_worker:
+    num_cpus: 0.1
+    num_gpus: 0
+  rollout:
+    n: 8
+  alfworld:
+    eval_dataset: eval_in_distribution
+  use_skills_only_memory: true
+  skills_only_memory:
+    skills_json_path: ${oc.env:OVCSD_ROOT}/memory_data/alfworld/claude_style_skills.json
+    include_on_init: true
+    top_k: 6
+    enable_dynamic_update: false
+    update_threshold: 0.4
+    max_new_skills: 3
+skill_sd:
+  enable_internalization: false
+  val_arm_mode: student
+  teacher_val_freq: 50
+  student_rollout:
+    use_skill: false
+    n: null
+  teacher_rollout:
+    enabled: true
+    use_skill: true
+    n: 1
+    n_start: null
+    n_end: null
+    n_curriculum_steps: 30
+    trigger: hard_only
+    trigger_probability: 0.0
+    query_budget: null
+    acquisition_signal: task_score
+    acquisition_floor: 0.05
+    acquisition_hardness_power: 1.0
+    acquisition_uncertainty_weight: 0.25
+    success_reward_threshold: 10
+    candidate_success_reward_threshold: 10.0
+    trigger_reward_mean_threshold: null
+    trigger_reward_mean_start: null
+    trigger_reward_mean_end: null
+    trigger_reward_mean_curriculum_steps: 30
+    utility_mode: best_minus_student_mean
+    aux_gate_mode: success
+    utility_eps: 0.0
+    task_score_utility: false
+    aux_weight_mode: trajectory_quality
+    aux_quality_floor: 0.0
+    aux_use_group_utility: false
+    failure_reflection:
+      enabled: false
+    dump_dir: null
+    span_dump_dir: null
+  state_teacher_query:
+    enabled: false
+  alpha: 1.0
+  beta: 1.0
+  lambda_int: 0.0
+  lambda_int_warmup_steps: 0
+  token_gate_beta: 1.0
+  disable_sample_gate: false
+  disable_token_gate: false
+  normalize_aux_by_group: true
+  entropy_gate:
+    enabled: false
+  skillrl_warmup_steps: 0
+  enable_cf: false
+  lambda_cf: 0.0
+  beta_cf: 1.0
+  g_thresh: 0.0
+  cf_divergence_mode: first
+  cf_max_teacher_pairs_per_student: 3
+  cf_pair_mode: signed
+  cf_utility_source: task_score
+  cf_utility_scale: 1.0
+  rescue_pairing: false
+  rescue_action_only: true
+  causal_probe_mode: 'off'
+  causal_probe_eta: 1.0
+  prefix_rescue:
+    enabled: true
+    replace_teacher_rollout: true
+    attempts: 4
+    prefix_backoff_enabled: true
+    root_fallback_all_members: true
+    taskscore_fallback_enabled: false
+    min_support: 2
+    min_depth: 1
+    max_depth: 10
+    max_groups_per_step: 8
+    weak_success:
+      enabled: false
+    fallback_to_root: true
+    max_reward_range: 1.0e-08
+    reject_shallow_actions: []
+    teacher_action_do_sample: true
+    continuation_do_sample: true
+    advantage_scale: 1.0
+    positive_pg_only: false
+    uniform_suffix_distill: false
+    strict_consistency: true
+    suffix_kl_weight: 0.05
+    suffix_kl_top_k: 64
+    suffix_kl_temperature: 1.0
+    suffix_kl_eps: 1.0e-08
+    replay_batch_workers: 16
+    dump: true
+    dump_student_groups: true
+    root_retry_n: 1
+    anchor_mode: deepest
+  process:
+    enabled: false
+  cf_branch:
+    enabled: false
+  skill_attribution:
+    enabled: false
+  lambda_skill: 0.0
+  skill_loss:
+    mode: ppo_sil
+    scope: successful_trajectories
+    gate: teacher_success
+    clip_ratio: 0.2
+    alpha: 1.0
+    use_utility_weight: false
+  fixed_g:
+    enabled: false
+  fixed_val:
+    enabled: false
+  logging:
+    enabled: true
+    wandb_debug: false
+    default_paths: true
+    intervention_csv: null
+    task_success_jsonl: null
+    fixed_g_jsonl: null
+  dump_teacher_trajectories: true
+  dump_span_pairs: true
+  dump_span_pair_probes: true
+  legacy_alt_prompt_tensors: false
+hydra:
+  run:
+    dir: ${oc.env:RUN_DIR}/hydra
